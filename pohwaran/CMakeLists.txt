@@ -1,0 +1,13 @@
+project(pohwaran)
+
+add_library(pohwaran SHARED ../vendor/tinyxml2/tinyxml2.cpp)
+target_link_libraries(pohwaran tinyxml2)
+target_compile_definitions(pohwaran PRIVATE DRAGON_LIBRARY_NAME="pohwaran")
+if(MSVC)
+    generate_export_header(pohwaran BASE_NAME POHWARAN DEFINE_NO_DEPRECATED EXPORT_FILE_NAME ${PROJECT_SOURCE_DIR}/autogen/export_win32.h)
+else()
+    generate_export_header(pohwaran BASE_NAME POHWARAN DEFINE_NO_DEPRECATED EXPORT_FILE_NAME ${PROJECT_SOURCE_DIR}/autogen/export_clang.h)
+endif()
+target_include_directories(pohwaran PUBLIC ${PROJECT_SOURCE_DIR}/public)
+target_include_directories(pohwaran PUBLIC ${PROJECT_SOURCE_DIR}/autogen)
+add_subdirectory("private")
