@@ -1,5 +1,0 @@
-project(VENDOR)
-# add_subdirectory("librevorb")
-add_subdirectory("standard_dragon")
-add_subdirectory("tinyxml2")
-# add_subdirectory("ww2ogg")
