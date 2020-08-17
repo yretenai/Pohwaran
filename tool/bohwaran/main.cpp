@@ -5,7 +5,6 @@
 #include <Pohwaran.h>
 #include <cstdio>
 #include <standard_dragon/WemSoundbank.hpp>
-#include <standard_dragon/dragon.h>
 
 using namespace pohwaran;
 
@@ -70,6 +69,7 @@ int main(int argc, char** argv) {
     }
 
     LOG("Processing soundbanks and copying wem files...");
+    std::vector<std::shared_ptr<dragon::WemSoundbank>> stack;
     for (SoundbanksInfo::SoundbankInfo soundbank_info : bnk_info.soundbanks) {
         std::filesystem::path bnk_path = root / "Sound" / "GeneratedSoundBanks" / soundbank_info.soundbank_file.path;
         if (!std::filesystem::exists(bnk_path)) {
@@ -77,16 +77,18 @@ int main(int argc, char** argv) {
         }
         LOG("Processing bnk and wem files for " << soundbank_info.soundbank_file.short_name << " with language "
                                                 << soundbank_info.soundbank_file.language);
-        dragon::WemSoundbank bnk(dragon::read_file(bnk_path));
+        std::shared_ptr<dragon::WemSoundbank> bnk = std::make_shared<dragon::WemSoundbank>(dragon::read_file(bnk_path));
+        stack.push_back(bnk);
         for (std::pair<uint32_t, SoundbanksInfo::StreamedSoundbankFile> file : soundbank_info.included_memory_files) {
-            if (bnk.streams.find(file.first) == bnk.streams.end()) {
+            if (!bnk->has_stream(file.first)) {
                 continue; // ?
             }
             if (std::filesystem::exists(out / file.second.path)) {
                 continue;
             }
             LOG("Extracting " << (out / file.second.path));
-            dragon::write_file(out / file.second.path, bnk.streams[file.first].get());
+            dragon::Array<char> data = bnk->get_stream(file.first);
+            dragon::write_file(out / file.second.path, &data);
         }
         char* id_buffer[15];
         for (uint32_t id : soundbank_info.files) {
@@ -109,4 +111,5 @@ int main(int argc, char** argv) {
             std::filesystem::copy_file(wem_path, out / file.path);
         }
     }
+    LOG("Cleaning up");
 }
