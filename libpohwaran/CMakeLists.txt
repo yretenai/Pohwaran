@@ -1,7 +1,7 @@
 project(pohwaran)
 
 add_library(pohwaran SHARED)
-target_link_libraries(pohwaran PUBLIC tinyxml2)
+target_link_libraries(pohwaran PRIVATE tinyxml2)
 target_compile_definitions(pohwaran PRIVATE DRAGON_LIBRARY_NAME="pohwaran")
 if(MSVC)
     generate_export_header(pohwaran BASE_NAME POHWARAN DEFINE_NO_DEPRECATED EXPORT_FILE_NAME ${PROJECT_SOURCE_DIR}/autogen/PohwaranExport_Win32.h)
