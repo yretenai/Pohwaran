@@ -5,6 +5,7 @@
 #include <Pohwaran.h>
 #include <cstdio>
 #include <standard_dragon/WemSoundbank.hpp>
+#include <ww2ogg/ww2ogg/wwriff.h>
 
 #ifndef _WIN32
 #define sprintf_s(b, s, f, ...) sprintf(b, f, __VA_ARGS__)
@@ -12,12 +13,34 @@
 
 using namespace pohwaran;
 
+void convert_file(std::filesystem::path path, std::filesystem::path codebook) {
+    if(!std::filesystem::exists(path) || !std::filesystem::exists(codebook)) return;
+    std::filesystem::path ogg_target = path;
+    ogg_target.replace_extension(".ogg");
+    if(std::filesystem::exists(ogg_target)) return;
+    try {
+        Wwise_RIFF_Vorbis ogg(path.string(), codebook.string(), false, false, kNoForcePacketFormat);
+
+        std::ofstream of(ogg_target, std::ios::binary);
+        ogg.generate_ogg(of);
+    }
+    catch (const File_open_error& fe)
+    {
+        ELOG(fe);
+    }
+    catch (const Parse_error& pe)
+    {
+        ELOG(pe);
+    }
+}
+
 int main(int argc, char** argv) {
-    if (argc < 3) {
-        eprintf("Usage: %s path_to_data output_path \n", argv[0]);
+    if (argc < 4) {
+        eprintf("Usage: %s path_to_data output_path codebooks_path \n", argv[0]);
         return -1;
     }
 
+    std::filesystem::path codebook = std::filesystem::path(argv[3]);
     std::filesystem::path root = std::filesystem::path(argv[1]);
     std::filesystem::path info = root / "Sound" / "GeneratedSoundBanks" / "SoundbanksInfo.xml";
     std::filesystem::path out(argv[2]);
@@ -89,12 +112,16 @@ int main(int argc, char** argv) {
             if (!bnk.has_stream(file.first)) {
                 continue; // ?
             }
-            if (std::filesystem::exists(out / file.second.path)) {
+            std::filesystem::path target = out / file.second.path;
+            std::filesystem::path ogg_target = target;
+            ogg_target.replace_extension(".ogg");
+            if (std::filesystem::exists(target) || std::filesystem::exists(ogg_target)) {
                 continue;
             }
-            LOG("Extracting " << (out / file.second.path));
+            LOG("Extracting " << target);
             dragon::Array<char> data = bnk.get_stream(file.first);
-            dragon::write_file(out / file.second.path, &data);
+            dragon::write_file(target, &data);
+            convert_file(target, codebook);
         }
         char* id_buffer[15];
         for (uint32_t id : soundbank_info.files) {
@@ -110,11 +137,15 @@ int main(int argc, char** argv) {
                     continue;
                 }
             }
-            if (std::filesystem::exists(out / file.path)) {
+            std::filesystem::path target = out / file.path;
+            std::filesystem::path ogg_target = target;
+            ogg_target.replace_extension(".ogg");
+            if (std::filesystem::exists(target) || std::filesystem::exists(ogg_target)) {
                 continue;
             }
-            LOG("Copying " << (out / file.path));
-            std::filesystem::copy_file(wem_path, out / file.path);
+            LOG("Copying " << target);
+            std::filesystem::copy_file(wem_path, target);
+            convert_file(target, codebook);
         }
     }
     LOG("Cleaning up");

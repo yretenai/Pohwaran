@@ -4,3 +4,6 @@
 [submodule "vendor/tinyxml2"]
 	path = vendor/tinyxml2
 	url = git@github.com:leethomason/tinyxml2.git
+[submodule "vendor/ww2ogg"]
+	path = vendor/ww2ogg
+	url = git@github.com:yretenai/ww2ogg.git
