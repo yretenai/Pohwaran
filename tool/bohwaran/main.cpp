@@ -6,6 +6,10 @@
 #include <cstdio>
 #include <standard_dragon/WemSoundbank.hpp>
 
+#ifndef _WIN32
+#define sprintf_s(b, s, f, ...) sprintf(b, f, __VA_ARGS__)
+#endif
+
 using namespace pohwaran;
 
 int main(int argc, char** argv) {
@@ -19,7 +23,11 @@ int main(int argc, char** argv) {
     std::filesystem::path out(argv[2]);
 
     if (!std::filesystem::exists(info)) {
+#ifndef _WIN32
+        eprintf("%s doesn't exist!", info.c_str());
+#else
         eprintf("%ls doesn't exist!", info.c_str());
+#endif
         return -2;
     }
 
@@ -69,7 +77,6 @@ int main(int argc, char** argv) {
     }
 
     LOG("Processing soundbanks and copying wem files...");
-    std::vector<std::shared_ptr<dragon::WemSoundbank>> stack;
     for (SoundbanksInfo::SoundbankInfo soundbank_info : bnk_info.soundbanks) {
         std::filesystem::path bnk_path = root / "Sound" / "GeneratedSoundBanks" / soundbank_info.soundbank_file.path;
         if (!std::filesystem::exists(bnk_path)) {
@@ -77,17 +84,16 @@ int main(int argc, char** argv) {
         }
         LOG("Processing bnk and wem files for " << soundbank_info.soundbank_file.short_name << " with language "
                                                 << soundbank_info.soundbank_file.language);
-        std::shared_ptr<dragon::WemSoundbank> bnk = std::make_shared<dragon::WemSoundbank>(dragon::read_file(bnk_path));
-        stack.push_back(bnk);
+        dragon::WemSoundbank bnk = dragon::WemSoundbank(dragon::read_file(bnk_path));
         for (std::pair<uint32_t, SoundbanksInfo::StreamedSoundbankFile> file : soundbank_info.included_memory_files) {
-            if (!bnk->has_stream(file.first)) {
+            if (!bnk.has_stream(file.first)) {
                 continue; // ?
             }
             if (std::filesystem::exists(out / file.second.path)) {
                 continue;
             }
             LOG("Extracting " << (out / file.second.path));
-            dragon::Array<char> data = bnk->get_stream(file.first);
+            dragon::Array<char> data = bnk.get_stream(file.first);
             dragon::write_file(out / file.second.path, &data);
         }
         char* id_buffer[15];

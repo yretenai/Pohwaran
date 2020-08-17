@@ -4,8 +4,10 @@
 
 #include "SoundbanksInfo.h"
 
-#include <standard_dragon/dragon.h>
 #include <tinyxml2.h>
+#ifndef _WIN32
+#include <algorithm>
+#endif
 
 using namespace tinyxml2;
 
@@ -20,14 +22,26 @@ pohwaran::SoundbanksInfo::StreamedSoundbankFile read_entry(XMLElement* element) 
     if (child != nullptr) {
         ptr = child->GetText();
         if (ptr != nullptr) {
-            entry.short_name = child->GetText();
+            std::string str = std::string(ptr);
+#ifndef _WIN32
+            if(str.find('\\')) {
+                std::replace(str.begin(), str.end(), '\\', '/');
+            }
+#endif
+            entry.short_name = str;
         }
     }
     child = element->FirstChildElement("Path");
     if (child != nullptr) {
         ptr = child->GetText();
         if (ptr != nullptr) {
-            entry.path = child->GetText();
+            std::string str = std::string(ptr);
+#ifndef _WIN32
+            if(str.find('\\')) {
+                std::replace(str.begin(), str.end(), '\\', '/');
+            }
+#endif
+            entry.path = str;
         }
     }
     return entry;
